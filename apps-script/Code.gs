@@ -1,0 +1,658 @@
+/* =========================================================================
+   Script Google du site amarbcrb.pages.dev
+   Stocke le contenu (contenu.json), les médias et le portfolio dans ton Google Drive.
+   Installation : voir INSTALLATION.md.
+
+   Lecture  (GET)  : ?a=contenu | ?a=portfolio[&frais=1&jeton=…] | ?a=galerie&id=…[&frais=1&jeton=…]
+   Écriture (POST) : corps JSON { a, jeton, … } envoyé en text/plain
+     connexion, enregistrer, envoyerMedia, listerMedias, supprimerMedia, apercuLien,
+     dossierPortfolio, dossierGalerie, envoyerFichier, creerDossier, renommerDossier, supprimerDossier, supprimerFichier,
+     protegerDossier, liensDossier ; sans jeton : ouvrirDossier, fichierProtege (avec la clé du dossier)
+   Réponse : { ok: true, … } ou { ok: false, erreur }
+   ========================================================================= */
+
+/* 1. Écris ici ton mot de passe admin, exécute installer(), puis efface-le (remets '') et enregistre. */
+const MOT_DE_PASSE_INITIAL = '';
+const URL_CONTENU_DEFAUT = 'https://amarbcrb.pages.dev/content/default.json';
+
+const DUREE_JETON_MS = 30 * 24 * 3600 * 1000;
+const ECHECS_MAX = 5;
+const BLOCAGE_S = 15 * 60;
+const CACHE_PORTFOLIO_S = 5 * 60;
+const CACHE_CONTENU_S = 6 * 3600;
+const CACHE_MAX = 100 * 1024; /* limite de CacheService par valeur */
+const FICHIER_MAX_OCTETS = 25 * 1024 * 1024;
+const CV_MAX_OCTETS = 10 * 1024 * 1024;
+const IMAGE_MAX_OCTETS = 10 * 1024 * 1024;
+const EMPLACEMENTS = ['photo', 'logo', 'favicon', 'cv', 'image']; /* image : image d'une carte (médiathèque) */
+const MEDIAS_SITE = ['photo', 'logo', 'favicon', 'cv']; /* remplacés → à la corbeille à l'enregistrement */
+
+class ErreurEntree extends Error {
+  constructor(code, extra) { super(code); this.code = code; this.extra = extra || {}; }
+}
+
+/* ---------- Installation ---------- */
+function installer() {
+  if (!MOT_DE_PASSE_INITIAL) throw new Error('Écris ton mot de passe dans MOT_DE_PASSE_INITIAL avant de lancer installer().');
+  const p = PropertiesService.getScriptProperties();
+  if (!p.getProperty('ID_CONTENU')) {
+    const site = DriveApp.createFolder('Site amarbcrb');
+    const medias = site.createFolder('Médias');
+    /* le dossier n'est pas public : ses fichiers le sont un par un à la lecture (sauf dossiers protégés) */
+    const portfolio = site.createFolder('Portfolio');
+    const defaut = UrlFetchApp.fetch(URL_CONTENU_DEFAUT, { muteHttpExceptions: true });
+    if (defaut.getResponseCode() !== 200) throw new Error('Impossible de lire ' + URL_CONTENU_DEFAUT);
+    const contenu = site.createFile('contenu.json', defaut.getContentText(), MimeType.PLAIN_TEXT);
+    p.setProperties({
+      ID_SITE: site.getId(), ID_CONTENU: contenu.getId(), ID_MEDIAS: medias.getId(), ID_PORTFOLIO: portfolio.getId(),
+      MDP_SEL: Utilities.getUuid(),
+    });
+  }
+  p.setProperty('MDP_HASH', hacher(MOT_DE_PASSE_INITIAL, p.getProperty('MDP_SEL')));
+  /* nouvelle clé de signature : tous les appareils déjà connectés sont déconnectés */
+  p.setProperty('CLE', Utilities.getUuid() + Utilities.getUuid());
+  console.log('Installation terminée. Efface maintenant le mot de passe de MOT_DE_PASSE_INITIAL, enregistre, puis déploie en Application Web.');
+}
+
+/* ---------- Points d'entrée ---------- */
+function doGet(e) {
+  return traiter(() => {
+    const q = (e && e.parameter) || {};
+    if (q.a === 'contenu') return lireContenu();
+    if (q.a === 'portfolio') return listerPortfolio(q.frais === '1' && verifierJeton(q.jeton));
+    if (q.a === 'galerie') return listerGalerie(q.id, q.frais === '1' && verifierJeton(q.jeton));
+    throw new ErreurEntree('entree');
+  });
+}
+
+function doPost(e) {
+  return traiter(() => {
+    let d;
+    try { d = JSON.parse(e.postData.contents); } catch (_) { throw new ErreurEntree('entree'); }
+    if (!d || typeof d !== 'object') throw new ErreurEntree('entree');
+    if (d.a === 'connexion') return connexion(d.motDePasse);
+    if (d.a === 'ouvrirDossier') return ouvrirDossier(d.id, d.motDePasse, d.cle);
+    if (d.a === 'fichierProtege') return fichierProtege(d.id, d.cle, d.taille);
+    if (!verifierJeton(d.jeton)) throw new ErreurEntree('jeton');
+    if (d.a === 'enregistrer') return enregistrer(d.versionDeBase, d.contenu);
+    if (d.a === 'envoyerMedia') return envoyerMedia(d);
+    if (d.a === 'apercuLien') return apercuLien(d.url);
+    if (d.a === 'dossierPortfolio') return dossierPortfolio(d.lienDossier);
+    if (d.a === 'listerMedias') return listerMedias();
+    if (d.a === 'supprimerMedia') return supprimerMedia(d.id);
+    if (d.a === 'dossierGalerie') return dossierGalerie(d.lienDossier);
+    if (d.a === 'envoyerFichier') return envoyerFichier(d);
+    if (d.a === 'creerDossier') return creerDossier(d.parentId, d.nom);
+    if (d.a === 'renommerDossier') return renommerDossier(d.id, d.nom);
+    if (d.a === 'supprimerDossier') return supprimerDossier(d.id);
+    if (d.a === 'supprimerFichier') return supprimerFichier(d.id);
+    if (d.a === 'protegerDossier') return protegerDossier(d.id, d.motDePasse);
+    if (d.a === 'liensDossier') return liensDossier(d.id, d.liens);
+    throw new ErreurEntree('entree');
+  });
+}
+
+function traiter(fn) {
+  let r;
+  try {
+    r = Object.assign({ ok: true }, fn());
+  } catch (err) {
+    r = Object.assign({ ok: false, erreur: err instanceof ErreurEntree ? err.code : 'interne' }, err instanceof ErreurEntree ? err.extra : {});
+    if (err && err.version !== undefined) r.version = err.version;
+    if (!(err instanceof ErreurEntree)) console.error(err);
+  }
+  return ContentService.createTextOutput(JSON.stringify(r)).setMimeType(ContentService.MimeType.JSON);
+}
+
+const proprietes = () => PropertiesService.getScriptProperties();
+
+/* ---------- Sécurité : mot de passe haché, jeton signé ---------- */
+function hacher(mdp, sel) {
+  return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, sel + ':' + mdp, Utilities.Charset.UTF_8));
+}
+
+function signerJeton(expireMs) {
+  const exp = String(Math.floor(expireMs));
+  const sig = Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(exp, proprietes().getProperty('CLE')));
+  return exp + '.' + sig;
+}
+
+function verifierJeton(jeton) {
+  if (typeof jeton !== 'string' || jeton.indexOf('.') < 0) return false;
+  const exp = jeton.split('.')[0];
+  if (!/^\d+$/.test(exp) || Number(exp) <= Date.now()) return false;
+  return signerJeton(Number(exp)) === jeton;
+}
+
+function connexion(mdp) {
+  const cache = CacheService.getScriptCache();
+  const echecs = Number(cache.get('echecs') || 0);
+  if (echecs >= ECHECS_MAX) throw new ErreurEntree('bloque');
+  const p = proprietes();
+  if (typeof mdp !== 'string' || hacher(mdp, p.getProperty('MDP_SEL')) !== p.getProperty('MDP_HASH')) {
+    cache.put('echecs', String(echecs + 1), BLOCAGE_S);
+    throw new ErreurEntree('mot_de_passe');
+  }
+  cache.remove('echecs');
+  const expire = Date.now() + DUREE_JETON_MS;
+  return { jeton: signerJeton(expire), expire: expire };
+}
+
+/* ---------- Contenu ---------- */
+function fichierContenu() { return DriveApp.getFileById(proprietes().getProperty('ID_CONTENU')); }
+
+/* le contenu est gardé dans le cache Google (plus rapide que Drive) ; Drive reste la source de vérité */
+function mettreEnCache(texte) {
+  const cache = CacheService.getScriptCache();
+  if (texte.length <= CACHE_MAX) cache.put('contenu', texte, CACHE_CONTENU_S);
+  else cache.remove('contenu');
+}
+
+function lireContenuDrive() {
+  const texte = fichierContenu().getBlob().getDataAsString();
+  mettreEnCache(texte);
+  const contenu = JSON.parse(texte);
+  return { version: Number(contenu.version) || 0, contenu: contenu };
+}
+
+function lireContenu() {
+  const enCache = CacheService.getScriptCache().get('contenu');
+  if (enCache) {
+    const contenu = JSON.parse(enCache);
+    return { version: Number(contenu.version) || 0, contenu: contenu };
+  }
+  return lireContenuDrive();
+}
+
+function enregistrer(versionDeBase, contenu) {
+  if (!contenu || typeof contenu !== 'object' || Array.isArray(contenu)) throw new ErreurEntree('entree');
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(10000);
+  try {
+    const actuel = lireContenuDrive();
+    if (Number(versionDeBase) !== actuel.version) {
+      const e = new ErreurEntree('conflit');
+      e.version = actuel.version;
+      throw e;
+    }
+    contenu.version = actuel.version + 1;
+    contenu.updatedAt = new Date().toISOString();
+    const texte = JSON.stringify(contenu);
+    fichierContenu().setContent(texte);
+    mettreEnCache(texte);
+    nettoyerMedias(actuel.contenu, contenu);
+    return { version: contenu.version };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+/* ---------- Médias ----------
+   Un envoi ajoute un fichier dans Médias (la médiathèque). À l'enregistrement, seuls le logo, la photo, le favicon
+   ou le CV remplacés partent à la corbeille ; les images des cartes restent dans la médiathèque jusqu'à ce qu'on
+   les supprime (supprimerMedia refuse tant qu'elles sont utilisées). */
+
+/* { id: [chemins] } de tous les fichiers utilisés par le contenu (médias du site, clés « image » et « media ») */
+function references(contenu) {
+  const refs = {};
+  const noter = (id, chemin) => { (refs[id] = refs[id] || []).push(chemin); };
+  const medias = (contenu && contenu.medias) || {};
+  MEDIAS_SITE.forEach((k) => { if (medias[k] && medias[k].id) noter(medias[k].id, 'medias.' + k); });
+  const parcourir = (v, chemin) => {
+    if (Array.isArray(v)) { v.forEach((x, i) => parcourir(x, chemin + '.' + i)); return; }
+    if (!v || typeof v !== 'object') return;
+    Object.keys(v).forEach((k) => {
+      const x = v[k];
+      if ((k === 'image' || k === 'media') && x && typeof x === 'object' && x.id) noter(x.id, chemin + '.' + k);
+      else parcourir(x, chemin + '.' + k);
+    });
+  };
+  ['accueil', 'parcours', 'liens', 'pages'].forEach((k) => parcourir(contenu && contenu[k], k));
+  return refs;
+}
+
+function nettoyerMedias(ancien, nouveau) {
+  try {
+    const utilises = references(nouveau);
+    const medias = (ancien && ancien.medias) || {};
+    MEDIAS_SITE.forEach((k) => {
+      const id = medias[k] && medias[k].id;
+      if (id && !utilises[id]) DriveApp.getFileById(id).setTrashed(true);
+    });
+  } catch (err) {
+    console.error(err); /* le contenu est enregistré ; un fichier en trop reste dans Médias */
+  }
+}
+
+const dansDossier = (element, idDossier) => {
+  const it = element.getParents();
+  while (it.hasNext()) if (it.next().getId() === idDossier) return true;
+  return false;
+};
+
+function listerMedias() {
+  const it = DriveApp.getFolderById(proprietes().getProperty('ID_MEDIAS')).getFiles();
+  const liste = [];
+  while (it.hasNext()) {
+    const f = it.next();
+    if (f.isTrashed()) continue;
+    const id = f.getId(), type = f.getMimeType();
+    liste.push({ id: id, nom: f.getName(), type: type, taille: f.getSize(), date: f.getDateCreated().getTime(),
+      url: type === 'application/pdf' ? 'https://drive.google.com/uc?export=download&id=' + id : urlImage(id, 1600) });
+  }
+  liste.sort((a, b) => b.date - a.date);
+  return { medias: liste };
+}
+
+function supprimerMedia(id) {
+  let f;
+  try { f = DriveApp.getFileById(String(id)); } catch (_) { throw new ErreurEntree('entree'); }
+  if (!dansDossier(f, proprietes().getProperty('ID_MEDIAS'))) throw new ErreurEntree('entree');
+  const chemins = references(lireContenu().contenu)[f.getId()];
+  if (chemins) throw new ErreurEntree('utilise', { emplacements: chemins });
+  f.setTrashed(true);
+  return {};
+}
+
+const urlImage = (id, largeur) => 'https://drive.google.com/thumbnail?id=' + id + '&sz=w' + largeur;
+
+function envoyerMedia(d) {
+  const emplacement = d.emplacement;
+  if (EMPLACEMENTS.indexOf(emplacement) < 0 || typeof d.base64 !== 'string' || typeof d.type !== 'string') throw new ErreurEntree('entree');
+  const estCv = emplacement === 'cv';
+  if (estCv ? d.type !== 'application/pdf' : d.type.indexOf('image/') !== 0) throw new ErreurEntree('entree');
+  const octets = Utilities.base64Decode(d.base64);
+  if (octets.length > (estCv ? CV_MAX_OCTETS : IMAGE_MAX_OCTETS)) throw new ErreurEntree('entree');
+  const p = proprietes();
+  const nom = String(d.nom || emplacement).slice(0, 120);
+  const fichier = DriveApp.getFolderById(p.getProperty('ID_MEDIAS')).createFile(Utilities.newBlob(octets, d.type, nom));
+  fichier.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  const id = fichier.getId();
+  const largeur = emplacement === 'favicon' ? 512 : emplacement === 'image' ? 1600 : 2000;
+  return { id: id, url: estCv ? 'https://drive.google.com/uc?export=download&id=' + id : urlImage(id, largeur) };
+}
+
+/* ---------- Aperçu d'un lien : titre, description, image ---------- */
+function decoderEntites(s) {
+  return String(s)
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)))
+    .replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ').trim();
+}
+
+function resoudreUrl(rel, base) {
+  if (!rel) return '';
+  if (/^https?:\/\//i.test(rel)) return rel;
+  const m = /^(https?:)\/\/([^/]+)(\/[^?#]*)?/i.exec(base);
+  if (!m) return '';
+  if (rel.indexOf('//') === 0) return m[1] + rel;
+  if (rel.charAt(0) === '/') return m[1] + '//' + m[2] + rel;
+  const dossier = (m[3] || '/').replace(/[^/]*$/, '');
+  return m[1] + '//' + m[2] + dossier + rel;
+}
+
+function lireMeta(html, urlBase) {
+  const metas = {};
+  (html.match(/<meta\b[^>]*>/gi) || []).forEach((balise) => {
+    const attr = (nom) => {
+      const m = new RegExp('\\b' + nom + '\\s*=\\s*("([^"]*)"|\'([^\']*)\')', 'i').exec(balise);
+      return m ? (m[2] !== undefined ? m[2] : m[3]) : null;
+    };
+    const cle = (attr('property') || attr('name') || '').toLowerCase();
+    const val = attr('content');
+    if (cle && val !== null && !(cle in metas)) metas[cle] = decoderEntites(val);
+  });
+  const titre = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html);
+  return {
+    titre: metas['og:title'] || metas['twitter:title'] || (titre ? decoderEntites(titre[1]) : ''),
+    description: metas['og:description'] || metas.description || metas['twitter:description'] || '',
+    image: resoudreUrl(metas['og:image'] || metas['twitter:image'] || '', urlBase),
+  };
+}
+
+function apercuLien(url) {
+  if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) throw new ErreurEntree('entree');
+  const r = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+  if (r.getResponseCode() >= 400) return { titre: '', description: '', image: '' };
+  return lireMeta(r.getContentText().slice(0, 300000), url);
+}
+
+/* ---------- Portfolio et galeries Drive ----------
+   Racines autorisées : le dossier Portfolio et les dossiers des onglets « Galerie Drive » déclarés dans le contenu.
+   Le script n'agit que sur ces racines et leurs sous-dossiers directs, jamais ailleurs dans le Drive. */
+function idDepuisLien(lien) {
+  const s = String(lien || '');
+  const m = /folders\/([\w-]+)/.exec(s) || /[?&]id=([\w-]+)/.exec(s);
+  if (m) return m[1];
+  return /^[\w-]{10,}$/.test(s) ? s : null;
+}
+
+/* dossiers du site lui-même : jamais portfolio, jamais galerie */
+const interdits = () => [proprietes().getProperty('ID_SITE'), proprietes().getProperty('ID_MEDIAS')];
+
+function galeries() {
+  const perso = (((lireContenu().contenu || {}).onglets || {}).perso) || [];
+  return perso.filter((o) => o && o.type === 'drive' && o.dossierId && interdits().indexOf(String(o.dossierId)) < 0).map((o) => String(o.dossierId));
+}
+
+function racines() {
+  const p = proprietes().getProperty('ID_PORTFOLIO');
+  return (p ? [p] : []).concat(galeries());
+}
+
+function dossierParId(id) {
+  try { return DriveApp.getFolderById(String(id)); } catch (_) { throw new ErreurEntree('entree'); }
+}
+
+/* vrai si id est le dossier du site, celui des médias, ou l'un de leurs dossiers parents (Mon Drive compris) */
+function contientLeSite(id) {
+  const vus = {};
+  const pile = interdits().filter(Boolean).map((x) => { try { return DriveApp.getFolderById(x); } catch (_) { return null; } }).filter(Boolean);
+  while (pile.length) {
+    const d = pile.pop();
+    if (d.getId() === id) return true;
+    if (vus[d.getId()]) continue;
+    vus[d.getId()] = true;
+    const it = d.getParents();
+    while (it.hasNext()) pile.push(it.next());
+  }
+  return false;
+}
+
+function racineChoisie(lien) {
+  const id = idDepuisLien(lien);
+  if (!id || contientLeSite(id)) throw new ErreurEntree('entree');
+  return dossierParId(id);
+}
+
+/* racine autorisée, ou sous-dossier direct d'une racine autorisée */
+function racineDe(dossier) {
+  const r = racines();
+  if (r.indexOf(dossier.getId()) >= 0) return dossier.getId();
+  const it = dossier.getParents();
+  while (it.hasNext()) { const p = it.next().getId(); if (r.indexOf(p) >= 0) return p; }
+  return null;
+}
+
+function viderCachesDossiers() {
+  const cache = CacheService.getScriptCache();
+  cache.remove('portfolio');
+  galeries().forEach((id) => cache.remove('galerie:' + id));
+}
+
+function sousDossiers(racine) {
+  const liste = [];
+  const it = racine.getFolders();
+  while (it.hasNext()) {
+    const d = it.next();
+    if (!d.isTrashed() && interdits().indexOf(d.getId()) < 0) liste.push(d);
+  }
+  return liste;
+}
+
+const PUBLIC = () => [DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW];
+const PRIVE = () => [DriveApp.Access.PRIVATE, DriveApp.Permission.NONE];
+/* ne touche au partage que s'il change (chaque appel Drive coûte) */
+function partager(element, publique) {
+  const [acces, permission] = publique ? PUBLIC() : PRIVE();
+  if (element.getSharingAccess() !== acces) element.setSharing(acces, permission);
+}
+
+function fichiersBruts(dossier) {
+  const fichiers = [];
+  const it = dossier.getFiles();
+  while (it.hasNext()) {
+    const f = it.next();
+    if (!f.isTrashed()) fichiers.push(f);
+  }
+  fichiers.sort((a, b) => a.getName().localeCompare(b.getName(), 'fr', { numeric: true }));
+  return fichiers;
+}
+
+/* fichiers d'un dossier public : partagés un par un, avec leur aperçu Drive */
+function fichiersDe(dossier) {
+  return fichiersBruts(dossier).map((f) => {
+    partager(f, true);
+    return { id: f.getId(), nom: f.getName(), type: f.getMimeType(), apercu: urlImage(f.getId(), 800), lien: f.getUrl() };
+  });
+}
+
+function lister(racine) {
+  partager(racine, false);
+  if (estProtege(racine.getId())) return { protege: true, dossiers: [], fichiers: [] };
+  return {
+    dossiers: sousDossiers(racine).map((d) => (estProtege(d.getId())
+      ? { id: d.getId(), nom: d.getName(), protege: true, fichiers: [] }
+      : { id: d.getId(), nom: d.getName(), fichiers: fichiersDe(d), liens: liensDe(d.getId()) })),
+    fichiers: fichiersDe(racine),
+    liens: liensDe(racine.getId()),
+  };
+}
+
+function enCacheOuLire(cle, frais, lire) {
+  const cache = CacheService.getScriptCache();
+  if (!frais) {
+    const enCache = cache.get(cle);
+    if (enCache) return JSON.parse(enCache);
+  }
+  const r = lire();
+  const texte = JSON.stringify(r);
+  if (texte.length < 90000) cache.put(cle, texte, CACHE_PORTFOLIO_S);
+  return r;
+}
+
+function dossierPortfolio(lien) {
+  const racine = racineChoisie(lien);
+  const id = racine.getId();
+  partager(racine, false);
+  proprietes().setProperty('ID_PORTFOLIO', id);
+  CacheService.getScriptCache().remove('portfolio');
+  return { id: id, sousDossiers: sousDossiers(racine).map((d) => ({ id: d.getId(), nom: d.getName() })) };
+}
+
+/* dossier d'un futur onglet « Galerie Drive » ; il devient lisible une fois l'onglet publié */
+function dossierGalerie(lien) {
+  const racine = racineChoisie(lien);
+  const id = racine.getId();
+  partager(racine, false);
+  return { id: id, nom: racine.getName(), sousDossiers: sousDossiers(racine).map((d) => ({ id: d.getId(), nom: d.getName() })) };
+}
+
+function listerPortfolio(frais) {
+  const id = proprietes().getProperty('ID_PORTFOLIO');
+  if (!id) return { dossiers: [] };
+  return enCacheOuLire('portfolio', frais, () => ({ racine: id, dossiers: lister(DriveApp.getFolderById(id)).dossiers }));
+}
+
+/* frais : relu dans Drive tout de suite (bouton « Mettre à jour depuis Drive » de l'admin), sinon cache de 5 min */
+function listerGalerie(id, frais) {
+  if (galeries().indexOf(String(id)) < 0) throw new ErreurEntree('entree');
+  return enCacheOuLire('galerie:' + id, frais, () => lister(dossierParId(id)));
+}
+
+function envoyerFichier(d) {
+  if (typeof d.base64 !== 'string' || typeof d.type !== 'string' || !d.type) throw new ErreurEntree('entree');
+  if (d.base64.length * 3 / 4 > FICHIER_MAX_OCTETS) throw new ErreurEntree('entree');
+  const dossier = dossierParId(d.dossierId);
+  if (!racineDe(dossier)) throw new ErreurEntree('entree');
+  const nom = String(d.nom || 'fichier').slice(0, 120);
+  const f = dossier.createFile(Utilities.newBlob(Utilities.base64Decode(d.base64), d.type, nom));
+  partager(f, !protegeOuSousProtege(dossier));
+  viderCachesDossiers();
+  return { id: f.getId(), nom: f.getName(), type: f.getMimeType(), apercu: urlImage(f.getId(), 800), lien: f.getUrl() };
+}
+
+const nomDossier = (nom) => {
+  const n = String(nom || '').trim().slice(0, 120);
+  if (!n) throw new ErreurEntree('entree');
+  return n;
+};
+
+function creerDossier(parentId, nom) {
+  const parent = dossierParId(parentId);
+  if (racines().indexOf(parent.getId()) < 0) throw new ErreurEntree('entree');
+  const d = parent.createFolder(nomDossier(nom));
+  viderCachesDossiers();
+  return { id: d.getId(), nom: d.getName() };
+}
+
+/* sous-dossier direct d'une racine (jamais la racine elle-même) */
+function sousDossierAutorise(id) {
+  const d = dossierParId(id);
+  if (interdits().indexOf(d.getId()) >= 0) throw new ErreurEntree('entree');
+  const racine = racineDe(d);
+  if (!racine || racine === d.getId()) throw new ErreurEntree('entree');
+  return d;
+}
+
+function renommerDossier(id, nom) {
+  const d = sousDossierAutorise(id);
+  d.setName(nomDossier(nom));
+  viderCachesDossiers();
+  return { id: d.getId(), nom: d.getName() };
+}
+
+function supprimerDossier(id) {
+  sousDossierAutorise(id).setTrashed(true);
+  viderCachesDossiers();
+  return {};
+}
+
+function supprimerFichier(id) {
+  let f;
+  try { f = DriveApp.getFileById(String(id)); } catch (_) { throw new ErreurEntree('entree'); }
+  if (f.getId() === proprietes().getProperty('ID_CONTENU')) throw new ErreurEntree('entree');
+  const it = f.getParents();
+  let autorise = false;
+  while (it.hasNext()) {
+    const parent = it.next();
+    if (interdits().indexOf(parent.getId()) >= 0) throw new ErreurEntree('entree');
+    if (racineDe(parent)) autorise = true;
+  }
+  if (!autorise) throw new ErreurEntree('entree');
+  f.setTrashed(true);
+  viderCachesDossiers();
+  return {};
+}
+
+/* ---------- Dossiers protégés par mot de passe ----------
+   Le mot de passe d'un dossier est gardé haché dans les propriétés du script, jamais dans le contenu public.
+   Ses fichiers sont privés sur Drive ; un visiteur qui donne le bon mot de passe reçoit une clé de 30 jours,
+   liée au mot de passe (le changer invalide les anciennes clés), et lit les fichiers à travers le script. */
+const protections = () => JSON.parse(proprietes().getProperty('PROTEGES') || '{}');
+const estProtege = (id) => Object.prototype.hasOwnProperty.call(protections(), id);
+
+function protegeOuSousProtege(dossier) {
+  if (estProtege(dossier.getId())) return true;
+  const it = dossier.getParents();
+  while (it.hasNext()) if (estProtege(it.next().getId())) return true;
+  return false;
+}
+
+function rendrePrive(dossier) {
+  partager(dossier, false);
+  fichiersBruts(dossier).forEach((f) => partager(f, false));
+  sousDossiers(dossier).forEach((d) => fichiersBruts(d).forEach((f) => partager(f, false)));
+}
+
+function protegerDossier(id, mdp) {
+  const dossier = dossierParId(id);
+  if (!racineDe(dossier)) throw new ErreurEntree('entree');
+  const p = protections();
+  if (mdp === '' || mdp === null || mdp === undefined) {
+    delete p[dossier.getId()];
+  } else {
+    if (typeof mdp !== 'string' || mdp.length < 4) throw new ErreurEntree('entree');
+    const sel = Utilities.getUuid();
+    p[dossier.getId()] = { sel: sel, hash: hacher(mdp, sel) };
+    rendrePrive(dossier);
+  }
+  proprietes().setProperty('PROTEGES', JSON.stringify(p));
+  viderCachesDossiers();
+  return { protege: Object.prototype.hasOwnProperty.call(p, dossier.getId()) };
+}
+
+/* liens d'un dossier (un dossier Drive ne peut pas contenir de liens) : gardés par le script */
+function liensDe(id) { return JSON.parse(proprietes().getProperty('LIENS:' + id) || '[]'); }
+
+function liensDossier(id, liens) {
+  const dossier = dossierParId(id);
+  if (!racineDe(dossier) || !Array.isArray(liens) || liens.length > 50) throw new ErreurEntree('entree');
+  const propres = liens.map((l) => {
+    if (!l || typeof l.url !== 'string' || !/^https?:\/\//i.test(l.url)) throw new ErreurEntree('entree');
+    return { titre: String(l.titre || l.url).slice(0, 120), url: l.url.slice(0, 2000) };
+  });
+  const texte = JSON.stringify(propres);
+  if (texte.length > 8000) throw new ErreurEntree('entree');
+  proprietes().setProperty('LIENS:' + dossier.getId(), texte);
+  viderCachesDossiers();
+  return { liens: propres };
+}
+
+function signerCle(id, expireMs) {
+  const prot = protections()[id];
+  const exp = String(Math.floor(expireMs));
+  const sig = Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature('dossier:' + id + ':' + exp + ':' + prot.hash, proprietes().getProperty('CLE')));
+  return exp + '.' + sig;
+}
+
+function verifierCle(id, cle) {
+  if (!estProtege(id) || typeof cle !== 'string' || cle.indexOf('.') < 0) return false;
+  const exp = cle.split('.')[0];
+  if (!/^\d+$/.test(exp) || Number(exp) <= Date.now()) return false;
+  return signerCle(id, Number(exp)) === cle;
+}
+
+/* mot de passe du dossier, ou clé déjà reçue (le visiteur n'a pas à le retaper pendant 30 jours) */
+function ouvrirDossier(id, mdp, cle) {
+  if (cle !== undefined && cle !== null) {
+    if (!verifierCle(String(id), cle)) throw new ErreurEntree('cle');
+    return contenuProtege(dossierParId(id), Number(String(cle).split('.')[0]), cle);
+  }
+  const cache = CacheService.getScriptCache();
+  const cleEchecs = 'echecs:' + id;
+  const echecs = Number(cache.get(cleEchecs) || 0);
+  if (echecs >= ECHECS_MAX) throw new ErreurEntree('bloque');
+  const prot = protections()[String(id)];
+  if (!prot) throw new ErreurEntree('entree');
+  if (typeof mdp !== 'string' || hacher(mdp, prot.sel) !== prot.hash) {
+    cache.put(cleEchecs, String(echecs + 1), BLOCAGE_S);
+    throw new ErreurEntree('mot_de_passe');
+  }
+  cache.remove(cleEchecs);
+  const dossier = dossierParId(id);
+  const expire = Date.now() + DUREE_JETON_MS;
+  return contenuProtege(dossier, expire, signerCle(dossier.getId(), expire));
+}
+
+function contenuProtege(dossier, expire, cle) {
+  const nus = (d) => fichiersBruts(d).map((f) => ({ id: f.getId(), nom: f.getName(), type: f.getMimeType() }));
+  return {
+    cle: cle, expire: expire,
+    dossier: {
+      id: dossier.getId(), nom: dossier.getName(), fichiers: nus(dossier), liens: liensDe(dossier.getId()),
+      dossiers: sousDossiers(dossier).map((d) => ({ id: d.getId(), nom: d.getName(), fichiers: nus(d), liens: liensDe(d.getId()) })),
+    },
+  };
+}
+
+/* contenu (ou miniature) d'un fichier d'un dossier protégé, en base64, pour qui a la clé de ce dossier */
+function fichierProtege(id, cle, taille) {
+  let f;
+  try { f = DriveApp.getFileById(String(id)); } catch (_) { throw new ErreurEntree('cle'); }
+  let autorise = false;
+  const parents = f.getParents();
+  while (parents.hasNext()) {
+    const p = parents.next();
+    if (verifierCle(p.getId(), cle)) autorise = true;
+    const grands = p.getParents();
+    while (grands.hasNext()) if (verifierCle(grands.next().getId(), cle)) autorise = true;
+  }
+  if (!autorise) throw new ErreurEntree('cle');
+  const blob = taille === 'apercu' ? f.getThumbnail() : f.getBlob();
+  if (!blob) return {};
+  const octets = blob.getBytes();
+  if (octets.length > IMAGE_MAX_OCTETS) throw new ErreurEntree('entree');
+  return { type: blob.getContentType(), base64: Utilities.base64Encode(octets) };
+}
