@@ -1,0 +1,756 @@
+{
+ "version": 1,
+ "updatedAt": "2026-10-29T00:00:00Z",
+ "site": {
+  "nom": "Amar Bouchareb",
+  "surtitre": "Microbiologie · Lyon 1",
+  "maintenance": {
+   "active": false,
+   "message": "Le site revient très vite."
+  }
+ },
+ "medias": {
+  "photo": {
+   "url": "/favicon-512x512.png"
+  },
+  "logo": {
+   "url": "/favicon-512x512.png"
+  },
+  "favicon": {
+   "url": "/favicon-512x512.png"
+  },
+  "cv": null
+ },
+ "onglets": {
+  "accueil": {
+   "visible": true
+  },
+  "parcours": {
+   "visible": true,
+   "sous": {
+    "profil": {
+     "visible": true,
+     "titre": "Profil"
+    },
+    "formation": {
+     "visible": true,
+     "titre": "Formation"
+    },
+    "experience": {
+     "visible": true,
+     "titre": "Expérience"
+    },
+    "engagement": {
+     "visible": true,
+     "titre": "Engagement"
+    },
+    "competences": {
+     "visible": true,
+     "titre": "Compétences"
+    },
+    "langues": {
+     "visible": true,
+     "titre": "Langues"
+    },
+    "certifications": {
+     "visible": true,
+     "titre": "Certifications"
+    },
+    "interets": {
+     "visible": true,
+     "titre": "Intérêts"
+    }
+   },
+   "sousTitre": "Ma formation, mes expériences et ce que je sais faire."
+  },
+  "portfolio": {
+   "visible": true,
+   "sousTitre": "Mes travaux en design, posters et montages vidéo."
+  },
+  "liens": {
+   "visible": true,
+   "sousTitre": "Mes projets, mes applis et les articles que je recommande."
+  },
+  "contact": {
+   "visible": true
+  },
+  "perso": []
+ },
+ "accueil": {
+  "salutation": "Bonjour, je suis Amar",
+  "intro": "Étudiant en Master 1 de microbiologie à l'Université Claude Bernard Lyon 1. L'an prochain, je vise le M2 MAABE ou MMPEM. Je fais aussi du design depuis six ans, et j'ai créé BioStudy, un site pour apprendre la biologie.",
+  "reperes": [
+   {
+    "id": "r1",
+    "valeur": "Master 1",
+    "libelle": "Microbiologie, Lyon 1",
+    "image": null,
+    "lien": "",
+    "bouton": "",
+    "visible": true
+   },
+   {
+    "id": "r2",
+    "valeur": "2022",
+    "libelle": "Création de BioStudy",
+    "image": null,
+    "lien": "",
+    "bouton": "",
+    "visible": true
+   },
+   {
+    "id": "r3",
+    "valeur": "6 ans",
+    "libelle": "de design freelance",
+    "image": null,
+    "lien": "",
+    "bouton": "",
+    "visible": true
+   }
+  ],
+  "domaines": [
+   {
+    "id": "d1",
+    "titre": "Microbiologie",
+    "texte": "J'ai préparé des échantillons, fait des colorations, de la microscopie et des identifications en laboratoire hospitalier.",
+    "image": null,
+    "lien": "#parcours/competences",
+    "visible": true
+   },
+   {
+    "id": "d2",
+    "titre": "Graphisme",
+    "texte": "Affiches, logos, identités visuelles et infographies pour tous types de projets, pas seulement scientifiques. En freelance depuis six ans.",
+    "image": null,
+    "lien": "#portfolio",
+    "visible": true
+   },
+   {
+    "id": "d3",
+    "titre": "Montage vidéo",
+    "texte": "Vidéos courtes pour les réseaux sociaux et vulgarisation scientifique.",
+    "image": null,
+    "lien": "#liens",
+    "visible": true
+   }
+  ],
+  "projetPhare": "u1"
+ },
+ "parcours": {
+  "profil": {
+   "titre": "Ce que j'étudie, et la suite",
+   "texte": "J'ai choisi la microbiologie parce qu'elle sert tous les jours : dans un aliment contrôlé avant d'arriver en rayon, dans un prélèvement identifié à l'hôpital.\n\nJe suis en Master 1 Microbiologie à l'Université Claude Bernard Lyon 1. Avant, j'ai fait un Master 1 de parasitologie à Tizi-Ouzou puis une licence de biologie cellulaire à Clermont-Ferrand. Au laboratoire hospitalier, j'ai préparé des échantillons, fait des colorations, de la microscopie et des identifications, en suivant les règles de biosécurité.\n\nPour le M2, je vise un des deux parcours de Lyon 1. MAABE (Microbiologie appliquée à l'agroalimentaire, au biomédical et à l'environnement) forme à la maîtrise des risques microbiens et à l'hygiène, avec un stage de cinq mois en laboratoire ou en entreprise : c'est la voie vers l'industrie et le contrôle qualité. MMPEM (Microbiologie moléculaire, pathogénie, écologie microbienne) est tourné vers la recherche, sur les mécanismes des pathogènes et les interactions entre microbes et hôtes, et mène souvent à une thèse.\n\nÀ côté, je fais du design depuis six ans et j'ai créé BioStudy, un site de cours et d'outils de biologie."
+  },
+  "formation": [
+   {
+    "id": "f1",
+    "titre": "Master 1 Microbiologie",
+    "lieu": "Université Claude Bernard Lyon 1",
+    "debut": "2025",
+    "fin": null,
+    "enCours": true,
+    "description": "",
+    "visible": true
+   },
+   {
+    "id": "f2",
+    "titre": "Licence 3 Biologie cellulaire",
+    "lieu": "Université Clermont Auvergne",
+    "debut": "2023",
+    "fin": "2025",
+    "enCours": false,
+    "description": "Virologie et métabolisme microbien (S5) ; parasitologie, identification bactérienne et biotechnologie (S6).",
+    "visible": true
+   },
+   {
+    "id": "f3",
+    "titre": "Master 1 Parasitologie",
+    "lieu": "Université Mouloud Mammeri, Tizi-Ouzou",
+    "debut": "2022",
+    "fin": "2023",
+    "enCours": false,
+    "description": "",
+    "visible": true
+   },
+   {
+    "id": "f4",
+    "titre": "Licence en Parasitologie",
+    "lieu": "",
+    "debut": "2021",
+    "fin": "2022",
+    "enCours": false,
+    "description": "",
+    "visible": true
+   },
+   {
+    "id": "f5",
+    "titre": "Baccalauréat Sciences",
+    "lieu": "Lycée Imache Amar, Béni-Douala",
+    "debut": "2016",
+    "fin": "2017",
+    "enCours": false,
+    "description": "",
+    "visible": true
+   }
+  ],
+  "experience": [
+   {
+    "id": "e1",
+    "titre": "Stage parasitologie-mycologie",
+    "lieu": "CHU Nedir Mohamed, Tizi-Ouzou",
+    "debut": "2023-06",
+    "fin": "2023-08",
+    "enCours": false,
+    "description": "Préparation d'échantillons, colorations, observation microscopique, identification d'agents parasitaires et fongiques, biosécurité.",
+    "visible": true
+   },
+   {
+    "id": "e2",
+    "titre": "Stage en établissement de santé public",
+    "lieu": "EPSP DBK, Tizi-Ouzou",
+    "debut": "2022-08",
+    "fin": "2022-08",
+    "enCours": false,
+    "description": "Prélèvements sous supervision, asepsie, hygiène hospitalière.",
+    "visible": true
+   },
+   {
+    "id": "e3",
+    "titre": "Illustrateur indépendant",
+    "lieu": "Freelance",
+    "debut": "2019",
+    "fin": "2025",
+    "enCours": false,
+    "description": "Infographies et supports pédagogiques : brief client, respect des délais.",
+    "visible": true
+   },
+   {
+    "id": "e4",
+    "titre": "Enseignant en sciences de la vie",
+    "lieu": "",
+    "debut": "2022",
+    "fin": "2023",
+    "enCours": false,
+    "description": "Conception de cours, évaluation, vulgarisation scientifique.",
+    "visible": true
+   },
+   {
+    "id": "e5",
+    "titre": "Serveur, restauration à forte affluence",
+    "lieu": "Étretat",
+    "debut": "2025",
+    "fin": "2026",
+    "enCours": false,
+    "description": "Serveur dans un restaurant très fréquenté d'Étretat : beaucoup de monde, et des clients de nationalités et de mentalités très différentes.",
+    "visible": true
+   }
+  ],
+  "engagement": [
+   {
+    "id": "g1",
+    "titre": "Secrétaire Général",
+    "lieu": "Association EMF, Clermont-Ferrand",
+    "debut": "2023-12",
+    "fin": null,
+    "enCours": true,
+    "description": "Auparavant Adjoint au Secrétaire Général.",
+    "visible": true
+   },
+   {
+    "id": "g2",
+    "titre": "Adjoint au Secrétaire Général",
+    "lieu": "Association Horizons de Djurdjura, Tizi-Ouzou",
+    "debut": "",
+    "fin": null,
+    "enCours": false,
+    "description": "",
+    "visible": true
+   }
+  ],
+  "competences": [
+   {
+    "id": "c1",
+    "domaine": "Microbiologie",
+    "resume": "Cultiver, isoler et identifier les microorganismes.",
+    "techniques": [
+     "Colorations",
+     "Isolement",
+     "Milieux de culture",
+     "Tests d'identification",
+     "Antibiogramme"
+    ],
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "c2",
+    "domaine": "Biologie moléculaire",
+    "resume": "Extraire l'ADN et l'ARN, puis les amplifier par PCR.",
+    "techniques": [
+     "Extraction ADN/ARN",
+     "Clonage",
+     "Électrophorèse",
+     "PCR",
+     "RT-PCR"
+    ],
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "c3",
+    "domaine": "Immunologie",
+    "resume": "Détecter et visualiser protéines et anticorps.",
+    "techniques": [
+     "ELISA",
+     "Western blot",
+     "Dot blot",
+     "Cytométrie en flux",
+     "Immunofluorescence"
+    ],
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "c4",
+    "domaine": "Bioinformatique",
+    "resume": "Lire des séquences et en tirer des conclusions biologiques.",
+    "techniques": [
+     "BLAST",
+     "ORF Finder",
+     "InterProScan",
+     "Alignements",
+     "Phylogénie"
+    ],
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "c5",
+    "domaine": "Pratiques de laboratoire",
+    "resume": "Travailler proprement, en sécurité, et interpréter ce que l'on observe.",
+    "techniques": [
+     "Bonnes pratiques de laboratoire",
+     "Biosécurité",
+     "Cultures microbiennes",
+     "Interprétation des résultats"
+    ],
+    "image": null,
+    "visible": true
+   }
+  ],
+  "langues": [
+   {
+    "id": "l1",
+    "langue": "Français",
+    "niveau": "Natif",
+    "drapeau": "",
+    "visible": true
+   },
+   {
+    "id": "l2",
+    "langue": "Arabe",
+    "niveau": "Natif",
+    "drapeau": "",
+    "visible": true
+   },
+   {
+    "id": "l3",
+    "langue": "Kabyle",
+    "niveau": "Natif",
+    "drapeau": "",
+    "visible": true
+   },
+   {
+    "id": "l4",
+    "langue": "Anglais",
+    "niveau": "Professionnel",
+    "drapeau": "",
+    "visible": true
+   },
+   {
+    "id": "l5",
+    "langue": "Espagnol",
+    "niveau": "Élémentaire",
+    "drapeau": "",
+    "visible": true
+   }
+  ],
+  "certifications": [
+   {
+    "id": "k1",
+    "titre": "Gestion de projet",
+    "organisme": "Google · Coursera",
+    "annee": "2024-2025",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k2",
+    "titre": "Créateur de contenu Adobe",
+    "organisme": "Adobe · Coursera",
+    "annee": "2024-2025",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k3",
+    "titre": "Biotechnologie industrielle",
+    "organisme": "Université de Manchester",
+    "annee": "2025",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k4",
+    "titre": "Parasitologie tropicale",
+    "organisme": "Duke University · KCMC",
+    "annee": "2025",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k5",
+    "titre": "Épidémiologie génétique",
+    "organisme": "University of Colorado",
+    "annee": "2025",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k6",
+    "titre": "Chemicals and Health",
+    "organisme": "Johns Hopkins University",
+    "annee": "2021",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k7",
+    "titre": "Préparation et réponse aux urgences",
+    "organisme": "UNICEF Agora",
+    "annee": "2025",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k8",
+    "titre": "Premiers Secours en Santé Mentale",
+    "organisme": "AMBS · APSYS",
+    "annee": "2025",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k9",
+    "titre": "Développement durable",
+    "organisme": "Université Clermont Auvergne",
+    "annee": "2024",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k10",
+    "titre": "Adobe Content Creator",
+    "organisme": "Adobe · Coursera · Spécialisation",
+    "annee": "",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k11",
+    "titre": "Design Fundamentals with AI",
+    "organisme": "Adobe · Coursera",
+    "annee": "",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k12",
+    "titre": "Generative AI Content Creation",
+    "organisme": "Adobe · Coursera",
+    "annee": "",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k13",
+    "titre": "Multimedia Content Creation",
+    "organisme": "Adobe · Coursera",
+    "annee": "",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k14",
+    "titre": "Social Media Content and Strategy",
+    "organisme": "Adobe · Coursera",
+    "annee": "",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k15",
+    "titre": "Adobe Illustrator for Beginners",
+    "organisme": "Coursera · Illustration vectorielle",
+    "annee": "",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k16",
+    "titre": "Adobe Premiere Pro for Beginners",
+    "organisme": "Coursera · Montage vidéo",
+    "annee": "",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k17",
+    "titre": "How to Optimize Your Instagram Account",
+    "organisme": "Coursera · Réseaux sociaux",
+    "annee": "",
+    "url": "",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "k18",
+    "titre": "Graphic Design",
+    "organisme": "Coursera",
+    "annee": "2024",
+    "url": "",
+    "image": null,
+    "visible": true
+   }
+  ],
+  "interets": [
+   {
+    "id": "i1",
+    "titre": "Astronomie",
+    "texte": "Membre d'un club d'astronomie, j'ai participé à plusieurs observations d'occultations stellaires.",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "i2",
+    "titre": "Cartomagie",
+    "texte": "Je pratique la cartomagie pour son côté artistique : chaque tour se travaille comme un petit spectacle, avec beaucoup d'entraînement.",
+    "image": null,
+    "visible": true
+   },
+   {
+    "id": "i3",
+    "titre": "Design",
+    "texte": "Je fais du design depuis six ans, dans tous les domaines : affiches, logos, identités visuelles. BioStudy n'est qu'un de mes projets.",
+    "image": null,
+    "visible": true
+   }
+  ]
+ },
+ "liens": {
+  "categories": [
+   {
+    "id": "projets",
+    "nom": "Projets",
+    "visible": true
+   },
+   {
+    "id": "android",
+    "nom": "Applis Android",
+    "visible": true
+   },
+   {
+    "id": "articles",
+    "nom": "Articles",
+    "visible": true
+   },
+   {
+    "id": "alire",
+    "nom": "À lire",
+    "visible": true
+   }
+  ],
+  "items": [
+   {
+    "id": "u1",
+    "url": "https://www.biostudy.xyz/",
+    "titre": "BioStudy",
+    "description": "Plateforme lancée en 2022 : des cours de biologie classés par université et des outils de laboratoire qui affichent la formule utilisée pour chaque résultat. Je l'ai conçue et développée seul.",
+    "image": "",
+    "categorie": "projets",
+    "date": "2026-10-29",
+    "bouton": "",
+    "type": "",
+    "media": null,
+    "visible": true,
+    "avis": ""
+   },
+   {
+    "id": "u2",
+    "url": "https://www.biostudy.xyz/BioCampus/",
+    "titre": "BioCampus",
+    "description": "Cours, TD, TP et examens",
+    "image": "",
+    "categorie": "projets",
+    "date": "2026-10-29",
+    "bouton": "",
+    "type": "",
+    "media": null,
+    "visible": true,
+    "avis": ""
+   },
+   {
+    "id": "u3",
+    "url": "https://www.biostudy.xyz/BioPCR/",
+    "titre": "BioPCR",
+    "description": "Mélange réactionnel PCR",
+    "image": "",
+    "categorie": "projets",
+    "date": "2026-10-29",
+    "bouton": "",
+    "type": "",
+    "media": null,
+    "visible": true,
+    "avis": ""
+   },
+   {
+    "id": "u4",
+    "url": "https://www.biostudy.xyz/BioDilu/",
+    "titre": "BioDilu",
+    "description": "Dilutions · C₁V₁ · UFC/mL",
+    "image": "",
+    "categorie": "projets",
+    "date": "2026-10-29",
+    "bouton": "",
+    "type": "",
+    "media": null,
+    "visible": true,
+    "avis": ""
+   },
+   {
+    "id": "u5",
+    "url": "https://www.biostudy.xyz/BioChem/",
+    "titre": "BioChem",
+    "description": "Molarité, molalité et solutions",
+    "image": "",
+    "categorie": "projets",
+    "date": "2026-10-29",
+    "bouton": "",
+    "type": "",
+    "media": null,
+    "visible": true,
+    "avis": ""
+   },
+   {
+    "id": "u6",
+    "url": "https://www.biostudy.xyz/BioMicro/",
+    "titre": "BioMicro",
+    "description": "Calculs de microbiologie",
+    "image": "",
+    "categorie": "projets",
+    "date": "2026-10-29",
+    "bouton": "",
+    "type": "",
+    "media": null,
+    "visible": true,
+    "avis": ""
+   },
+   {
+    "id": "u7",
+    "url": "https://www.biostudy.xyz/BioPrep/",
+    "titre": "BioPrep",
+    "description": "Solutions et milieux",
+    "image": "",
+    "categorie": "projets",
+    "date": "2026-10-29",
+    "bouton": "",
+    "type": "",
+    "media": null,
+    "visible": true,
+    "avis": ""
+   },
+   {
+    "id": "u8",
+    "url": "https://www.biostudy.xyz/BioBand/",
+    "titre": "BioBand",
+    "description": "Simulation de gel d'agarose",
+    "image": "",
+    "categorie": "projets",
+    "date": "2026-10-29",
+    "bouton": "",
+    "type": "",
+    "media": null,
+    "visible": true,
+    "avis": ""
+   },
+   {
+    "id": "u9",
+    "url": "https://www.biostudy.xyz/BioConvert/",
+    "titre": "BioConvert",
+    "description": "Conversions d'unités",
+    "image": "",
+    "categorie": "projets",
+    "date": "2026-10-29",
+    "bouton": "",
+    "type": "",
+    "media": null,
+    "visible": true,
+    "avis": ""
+   }
+  ],
+  "alireAjoute": true
+ },
+ "portfolio": {
+  "dossierRacineId": "",
+  "dossiers": {}
+ },
+ "contact": {
+  "email": "amarxbcrb@gmail.com",
+  "linkedin": "https://www.linkedin.com/in/amarbouchareb",
+  "autres": [
+   {
+    "id": "a1",
+    "label": "BioStudy",
+    "url": "https://www.biostudy.xyz/",
+    "visible": true
+   }
+  ],
+  "ouvertA": [
+   {
+    "id": "o1",
+    "titre": "Stages",
+    "detail": "Laboratoire de microbiologie, contrôle qualité, sécurité des aliments",
+    "visible": true
+   },
+   {
+    "id": "o2",
+    "titre": "Graphisme",
+    "detail": "Affiches, logos, identité visuelle, tous domaines",
+    "visible": true
+   },
+   {
+    "id": "o3",
+    "titre": "Montage vidéo",
+    "detail": "Vidéos courtes, réseaux sociaux, vulgarisation",
+    "visible": true
+   }
+  ]
+ },
+ "pages": {}
+}
